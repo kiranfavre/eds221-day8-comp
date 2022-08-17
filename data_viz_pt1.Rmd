@@ -22,7 +22,7 @@ library(ggbeeswarm)
 
 library(gapminder)
 
-#library(sf) -- will do later
+library(sf) 
 ```
 
 ### 
@@ -130,4 +130,145 @@ ggplot(lizards, aes(x = total_length, y = weight)) +
         )
 
 #using shape only deals with 6 variables, you could 
+```
+
+## Afternoon session
+
+### Using ggplot2
+
+#### Scales and color gradients
+
+```{r}
+#creating color gradient using two colors and scale_color_gradient
+ggplot(lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = weight),
+             size = 3) + 
+  scale_color_gradient(low = "purple", high = "red")
+
+
+# creating color gradient using a vector of colors and scale_color_gradientn
+ggplot(lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = weight),
+             size = 3) + 
+  scale_color_gradientn(colors = c("magenta", "cyan4",
+                                  "darkorchid3", "dodgerblue", "green",
+                                  "yellow"))
+
+
+#diverging color scheme
+# creating color gradient using two colors and scale_color_steps
+#given an output of color bins
+ggplot(lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = weight),
+             size = 3) + 
+  scale_color_steps(low = "red", high = "blue")
+
+
+
+# creating color gradient using a low, mid and high colors and scale_color_steps2
+ggplot(lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = total_length),
+             size = 3) + 
+  scale_color_steps2(low = "purple",
+                     mid = "white",
+                     high = "orange",
+                     midpoint = 150,
+                     breaks = c(50, 70, 150, 180, 220, 280))
+
+
+#sequential color scheme
+ggplot(lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = total_length)) +
+               scale_color_stepsn(colors = c("orange",
+                                             "red", "purple"),
+             breaks = seq(from = 0, 
+                          to = 300,
+                          by = 60))
+```
+
+#### Palettes using paletteer packages
+
+Make a horizontal box plot with common name on the y axis, total length on the x axis, with boxplot fill changing based on the common name
+
+```{r}
+#box plot
+#reordering the y axis, update sci name using mutate, renaming common_name column (override existing) and factor ize common name variable. Then reorders according to median of total length for each different species 
+lizards_median <- lizards |> 
+  mutate(common_name = fct_reorder(common_name, total_length,
+                                    .fun = median))
+
+
+ggplot(lizards, aes(y = common_name,
+                    x = total_length)) + 
+  geom_boxplot(aes(fill = common_name)) +
+  labs(x = "Total Length(mm)", 
+       y = "Common name")  
+
+```
+
+to check all palette options: `view(palettes_d_names)` in console
+
+```{r}
+ggplot(data = lizards_median, aes(y = common_name,
+                                  x = total_length)) +
+  geom_boxplot(aes(fill = common_name), show.legend = FALSE) +
+  scale_fill_paletteer_d(palette = "awtools"::"a_palette") + 
+  theme_minimal()
+```
+
+#### Changing elements of a graph using `theme`
+
+```{r}
+#element_blank removes that element, so here we will remove y grids
+ggplot(lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = weight)) +
+  theme(panel.grid.major.x = element_line(color = "red"),
+        panel.grid.minor.y = element_blank(),
+        axis.title.x = element_text(color = "purple", size = 10),
+        axis.text.y = element_text(color = "green"),
+        text = element_text(size = 18),
+        panel.background = element_rect(color = "purple", fill = "yellow")) + 
+  annotate("text", x = 300, y = 50, label = "Woooo!", color = "cyan4") +
+  geom_vline(xintercept = 250, linetype = "dashed", color = "orange", size = 4)
+```
+
+#### Repulsive labels with `ggrepel`
+
+```{r}
+wws_lizards <- lizards |> 
+  filter(common_name == "western whiptail",
+         site == "sand")
+
+ggplot(wws_lizards, aes(x = total_length, y = weight)) +
+  geom_point() +
+  geom_text_repel(aes(label = toe_num)) #labeling by toe tage number, keeps the value and point itself separate!
+```
+
+```{r}
+gapminder |>
+  filter(year == 2002,
+         continent == "Europe") |> 
+  ggplot(aes(x = gdpPercap, 
+             y = lifeExp)) +
+  geom_point() +
+  geom_text_repel(aes(label = country), size = 3)
+```
+
+#### `gghighlight`  highlights based on condition set
+
+```{r}
+ggplot(lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes()) +
+  gghighlight(weight > 30,label_key = toe_num) #anything with weight greater than 30 will be highlighted and labeled with their toe-number
+```
+
+### Map making
+
+```{r}
+jornada_veg <- read_sf(here("data_raw", "spatial_vegetation", "doc.kml"))
+
+ggplot(data = jornada_veg) +
+  geom_sf(aes(fill = Name)) +
+  theme_minimal() +
+  scale_fill_paletteer_d(palette = "ggsci::amber_material")
 ```
