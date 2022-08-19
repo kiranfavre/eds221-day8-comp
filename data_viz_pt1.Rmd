@@ -254,7 +254,7 @@ gapminder |>
   geom_text_repel(aes(label = country), size = 3)
 ```
 
-#### `gghighlight`  highlights based on condition set
+#### `gghighlight` highlights based on condition set
 
 ```{r}
 ggplot(lizards, aes(x = total_length, y = weight)) +
@@ -271,4 +271,68 @@ ggplot(data = jornada_veg) +
   geom_sf(aes(fill = Name)) +
   theme_minimal() +
   scale_fill_paletteer_d(palette = "ggsci::amber_material")
+```
+
+# Day 10: data viz cont
+
+## Make a heatmap!
+
+```{r}
+# first line is storing data in a new column to override date to store in ISO8601
+#counting by year and common name
+lizard_counts <- lizards |> 
+  mutate(date = lubridate::mdy(date)) |> 
+  count(year = lubridate::year(date), common_name) |> 
+  drop_na()
+```
+
+time to make our heatmap!
+
+```{r}
+#scale_fill_gradient_n lets u tell R how many colors u want
+ggplot(data = lizard_counts, aes(x = year, y = common_name)) +
+  geom_tile(aes( fill = n), show.legend = FALSE) +
+  geom_text(aes(label = n), color = "white", size = 3) +
+  scale_fill_gradientn(colors = c("navy", "red", "orange")) +
+  theme_minimal()
+```
+
+## Make a beeswarm plot
+
+these give ideas about distribution
+
+more precise than jitter plots
+
+```{r}
+whiptails <- lizards |> 
+  filter(common_name == "western whiptail") |> 
+  drop_na(total_length, weight) #Rows will be dropped that have total length or weight = NA
+```
+
+```{r}
+whiptail_beeswarm <- ggplot(data = whiptails, aes(x = sex, y = weight)) +
+  geom_beeswarm() +
+  geom_boxplot(fill = NA, size = 0.5)
+```
+
+## Marginal plot
+
+-   starting from whiptails, plot total length (x-axis) versus weight (y axis), with point color dependent on sex
+
+```{r}
+whiptail_plot <- ggplot(data = whiptails, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = sex)) +
+  theme(legend.position = "bottom")
+
+
+ggMarginal(whiptail_plot, type = "boxplot", groupColour = TRUE)
+```
+
+## Patchwork package to create compounded figs
+
+```{r}
+((whiptail_beeswarm + whiptail_plot) / whiptail_beeswarm) / 
+  whiptail_plot & theme_dark()
+# gives programatic control over figures by using operations + - / *
+# using "& ____" will attach whatever, theme or sumthin, to all of the plots
 ```
